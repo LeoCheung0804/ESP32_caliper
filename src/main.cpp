@@ -92,7 +92,7 @@ void setup() {
     delay(500);
     
     // Configure and initialize the wiper system
-    endEffectorWiper.configureLeadScrewMotor(SCREW_MOTOR_ID, 12);
+    endEffectorWiper.configureLeadScrewMotor(SCREW_MOTOR_ID, 8);
 
     endEffectorWiper.connect();
     
