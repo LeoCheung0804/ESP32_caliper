@@ -5,14 +5,14 @@
 #include <iostream>
 #include <string>
 
-// Pin definitions for Motor CAN bus and can ID
-#define CAN_TX 17
+// Motor Pin definitions for CAN bus and can ID
+#define CAN_TX 17   
 #define CAN_RX 16
 #define SCREW_MOTOR_ID 1
 
-// Serial communication pins and settings for the sensor
+// Sensor pins and settings
+#define SERIAL_TX_PIN 10    
 #define SERIAL_RX_PIN 9
-#define SERIAL_TX_PIN 10
 #define SENSOR_BAUD 9600
 
 // Global variables to track measurements and positions
@@ -44,9 +44,10 @@ bool isNumericString(const String &str) {
 }
 
 void reset_sensor(Stream& serial) {
-    serial.flush();        // Clear output buffer
-    serial.write('C');     // Send reset command
-    delay(100);           // Wait for reset to complete
+    // Send command with proper terminator (sensor likely expects CR or CR+LF)
+    serial.print("C\r");        // or "C\r\n" if sensor needs LF as well
+    serial.flush();             // ensure bytes are sent
+    delay(100);                 // Wait for reset to complete
 }
 
 float measure(Stream& serial) {
@@ -109,42 +110,56 @@ void setup() {
  * Main program loop
  */
 void loop() {
-    // Process serial commands if available
     if (Serial.available() > 0) {
         String input = Serial.readStringUntil('\n');
         input.trim();    // Remove whitespace
-        
         currentpos = endEffectorWiper.getLeadScrewPosition();
         
+        // Convert input to uppercase for case-insensitive comparison
+        String upperInput = input;
+        upperInput.toUpperCase();
+        
         // Command processing
-        if (input == "stop") {
+        if (upperInput == "S" || upperInput == "STOP") {
             endEffectorWiper.stopOperation();
             Serial.println("stopped");
         } 
         else if (isNumericString(input)) {
-            motorcount = input.toFloat();
-            endEffectorWiper.moveLeadScrew(motorcount);
+            float inputValue = input.toFloat();
+            // Add range validation
+            if (inputValue >= -140 && inputValue <= 20) {
+                motorcount = inputValue;
+                endEffectorWiper.moveLeadScrew(motorcount);
+            } else {
+                Serial.println("Error: Value must be between -140 and 20");
+            }
         } 
-        else if (input == "C") {
+        else if (upperInput == "C") {
             reset_sensor(Serial1);
             Serial.println("Sensor reset");
         } 
+        else if (upperInput == "M") {
+            // Read and display sensor measurement
+            distance = measure(Serial1);
+            if (distance > -999.0) {    // Valid measurement check
+                Serial.print("Distance (mm): ");
+                Serial.println(distance, 3);    // Display with 3 decimal places
+            }else {
+                Serial.println("Measurement error");
+            }
+        }
         else {
             Serial.println("Error: Invalid input");
         }
-        
-        // Report current position
+
         Serial.print("Lead screw position (mm): ");
         Serial.println(currentpos);
-        Serial.print("\n");
+        // Read and display sensor measurement
+        distance = measure(Serial1);
+        if (distance > -999.0) {    // Valid measurement check
+            Serial.print("Distance (mm): ");
+            Serial.println(distance, 3);    // Display with 3 decimal places
+        }
     }
-    
-    // Read and display sensor measurement
-    distance = measure(Serial1);
-    if (distance > -999.0) {    // Valid measurement check
-        Serial.print("Distance (mm): ");
-        Serial.println(distance, 3);    // Display with 3 decimal places
-    }
-    
-    delay(100);    // Control loop rate
+    //delay(100);    // Control loop rate
 }
