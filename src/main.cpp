@@ -73,6 +73,17 @@ float measure(Stream& serial) {
     return -999.0;    // Return error value
 }
 
+// Returns true on success, false on failure.
+bool runLeadScrewCurrentClockwise(int currentLimit = -500) {
+    Serial.print("Running lead screw clockwise in CURRENT mode, limit=");
+    Serial.println(currentLimit);
+    if (!endEffectorWiper.movewipercurrent(currentLimit)) {
+        Serial.println("Movement failed");
+        return false;
+    }
+    return true;
+}
+
 /**
  * Initial setup routine
  */
@@ -124,6 +135,10 @@ void loop() {
             endEffectorWiper.stopOperation();
             Serial.println("stopped");
         } 
+        else if (upperInput == "N") {
+            // Start current-mode clockwise run. Adjust 500 to desired current limit.
+            runLeadScrewCurrentClockwise();
+        }
         else if (isNumericString(input)) {
             float inputValue = input.toFloat();
             // Add range validation

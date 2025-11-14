@@ -14,6 +14,7 @@
 #define HOMING_TOLERANCE 100 // Tolerance for homing operation in encoder counts.
 #define HOMING_TIMEOUT 9000 // Timeout for homing operation in milliseconds.
 #define HOMING_CURRENT 600 // Current for homing operation in mA.
+#define MOVING_CURRENT 600 // Current for moving operation in mA.
 
 
 class Wiper {
@@ -33,6 +34,7 @@ public:
     void disengageWiper(); // Disengages the wiper from operation.
     bool connect(); // Connects to the motor driver and initializes the motors.
     int getErrorCounts(int motor_id); // Returns the error counts for a motor.
+    bool movewipercurrent(int current); // Moves the wiper in current mode.
 
 private:
     C610 MotorDriver;   // Motor driver object for controlling the wiper and lead screw.

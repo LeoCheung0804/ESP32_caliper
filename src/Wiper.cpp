@@ -55,6 +55,8 @@ void Wiper::moveWiper(float target_degree) {
     }
 }
 
+
+
 bool Wiper::performHoming() {
     // Perform homing operation (find zero position)
     // Return true if successful
@@ -149,4 +151,40 @@ bool Wiper::connect() {
         delay(100);
     }
     return true;
+}
+
+bool Wiper::movewipercurrent(int current) {
+    MotorDriver.changeMode(leadScrewID, CURRENT);
+    int current_cnt = MotorDriver.getMotorPos(leadScrewID);
+    int start_time = millis();
+    Serial.print("Start current mode moving lead screw from ");
+    Serial.print(current_cnt);
+    Serial.print(" start time: ");
+    Serial.println(start_time);
+    //move motor in negative direction
+    MotorDriver.move(leadScrewID, current);
+    delay(1000);
+    while (millis() - start_time < HOMING_TIMEOUT) {
+        int current_vel = abs(MotorDriver.getMotorVel(leadScrewID));
+        if (current_vel < HOMING_TOLERANCE) {
+            MotorDriver.move(leadScrewID, 0);
+            delay(500);
+            MotorDriver.move(leadScrewID, MOVING_CURRENT);
+            delay(500);
+            MotorDriver.move(leadScrewID, -MOVING_CURRENT);
+            delay(500);
+            MotorDriver.changeMode(leadScrewID, POSITION);
+            leadScrewZeroCnt = MotorDriver.getMotorPos(leadScrewID);
+            Serial.print("Moving done, zero count: ");
+            Serial.println(leadScrewZeroCnt);
+            return true;
+        }
+        delay(1000);
+        MotorDriver.changeMode(leadScrewID, POSITION);
+        leadScrewZeroCnt = MotorDriver.getMotorPos(leadScrewID);
+        Serial.print("position done, zero count: ");
+        Serial.println(leadScrewZeroCnt);
+    }
+
+    return false;
 }
